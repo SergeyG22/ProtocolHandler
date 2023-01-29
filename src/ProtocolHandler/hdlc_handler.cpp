@@ -1,9 +1,91 @@
 #include "ProtocolHandler/hdlc_handler.h"
 
+
+
 void HDLC_Handler::exec() {
+//	std::ofstream out("../result/HDLC_TEST_RESULT.sig", std::ios::out | std::ios::binary);		
+	std::ifstream file("../data/HDLC_TEST_.BIT", std::ifstream::in | std::ifstream::binary);
+	unsigned char current_bite;
+	const int number_of_bits = 8;
+	int step = 0; 
+	while (!file.eof()) {	
+		file.read((char*)&current_bite, sizeof(current_bite));
+		std::bitset<8>buffer(current_bite);
+		for (int i = 0; i < number_of_bits; ++i) {
+			bit_buffer.emplace_back(buffer[i]);
+			std::cout << buffer[i] << ' ';
+		}
+		std::cout << "byte number = " << step <<'\n';
+		step++;
+		if (step == 74) {
+			break;
+		}
+	}
+	file.close();
+	std::cout << bit_buffer.size();
+
+
+	/*
+	std::vector<size_t>byte_buffer; 
+	for (int i = ignore_start_bits; i < bit_buffer.size(); ++i) { 
+
+			if (byte_buffer.size() != number_of_bits) {				
+				byte_buffer.emplace_back(bit_buffer[i]);
+			}
+			else {
+				std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(byteConverter(byte_buffer))).str();
+				std::cout << hex << '\n';
+				byte_buffer.clear();
+				byte_buffer.emplace_back(bit_buffer[i]);
+
+				if (hex == frame_border) {
+					if (!frame_is_open) {
+						frame_is_open = true;
+						std::cout << "border open\n";
+						continue;
+					}
+					if (frame_is_open) {
+						frame_is_open = false;
+						std::cout << "border close\n";
+						continue;
+					}
+				}
+			}
+	}
+	*/
 	
-	std::ofstream out("../result/HDLC_TEST_RESULT.bin", std::ios::binary | std::ios::out);		//бит ридер
-	std::ifstream file("../data/HDLC_TEST_.BIT", std::ios::app | std::ios::binary);
+
+
+//	std::cout << '\n';
+//	std::cout << (int)byteConverter(bit_buffer) <<'\n';
+//	unsigned char test = byteConverter(bit_buffer);
+//	std::cout << result[0];
+
+//	std::string res = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(byteConverter(bit_buffer))).str();
+//	std::cout << res <<'\n';
+
+//	std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(current_bite)).str();
+//	std::cout << hex <<'\n';
+
+
+}
+
+unsigned char HDLC_Handler::byteConverter(std::vector<size_t>&buffer) {
+	std::vector<unsigned char>result((8 + 7) >> 3);							//байт конвертер
+	for (int j = 0; j < int(8); j++) {
+		result[j >> 3] |= (buffer[j] << (j & 7));
+	}
+	return result[0];
+}
+
+
+
+
+/*
+void HDLC_Handler::exec() {
+
+	std::ofstream out("../result/HDLC_TEST_RESULT.sig",  std::ios::out | std::ios::binary);		//бит ридер
+	std::ifstream file("../data/HDLC_TEST_.BIT", std::ios::in | std::ios::binary);
 	
 	unsigned char current_bite;
 	const int number_of_bits = 8;
@@ -11,38 +93,38 @@ void HDLC_Handler::exec() {
 		file.read((char*)&current_bite, sizeof(current_bite));
 		std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(current_bite)).str();
 		if (hex == frame_border) {
-			if (!frame_is_open) {
+			if (!frame_is_open) {					
 				frame_is_open = true;
-				std::cout << "border open\n";
 				continue;
 			}
 			if (frame_is_open) {
 				frame_is_open = false;
-				std::cout << "border close\n";
+				if (!byte_buffer.empty()) {
+					package_size = byte_buffer.size();
+					out.write(reinterpret_cast<const char*>(&package_size), sizeof(package_size));
+					for (auto get_byte : byte_buffer) {
+						out.write((char*)&get_byte, sizeof(get_byte));
+					}
+					byte_buffer.clear();
+				}
 				continue;
 			}
 		}
-		std::cout << hex << '\n';
-		std::bitset<8>bit_buffer(current_bite);			//[01111110]  //if (0x7E == 01111110)
-		for (int i = 0; i < number_of_bits; ++i) {		//записать в файл часть фрагмента BIN до первого 0x7e
-		//	std::cout << bit_buffer[i] << ' ';			
-		}
-	//	std::cout << '\n';	
-		out.write((char*)&current_bite, sizeof(current_bite));
+		if (frame_is_open) {
+			byte_buffer.emplace_back(current_bite);
+		}		
+
+			std::bitset<8>bit_buffer(current_bite);			
+			for (int i = 0; i < number_of_bits; ++i) {		
+				buffer.emplace_back(bit_buffer[i]);
+			}
 	}
-	
-	
-	/*
-	unsigned char current_byte;											//697091 общее число фреймов
-	std::ifstream file;													//байт ридер
-	file.open("../result/HDLC_TEST_RESULT.bin", std::ios::binary); 
-	while (file >> current_byte) {
-		file.read((char*)&current_byte, sizeof(current_byte));
-		std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(current_byte)).str();
-		std::cout << hex <<'\n';
-	}	
-	*/
+	std::cout << buffer.size() <<'\n';
 }
+*/
+
+
+
 
 //найти первый флаг
 //считать данные
@@ -55,3 +137,25 @@ void HDLC_Handler::exec() {
 //0x7e 0x7e 0x7e [data] 0x7e 0x7e
 //если флаг открыт то (пропустить цикл) continue и разрешить запись
 //out.write((uint16_t*)&current_bite, sizeof(uint16_t)); <<----------- записать в файл примерно так
+
+	//		std::cout << current_bite << '\n';
+	//		out.write((char*)&current_bite, sizeof(current_bite));
+	//		std::cout << byte_buffer.size() <<'\n';
+
+	//	std::cout << hex << '\n';
+	//	std::bitset<8>bit_buffer(current_bite);			//[01111110]  //if (0x7E == 01111110)
+	//	for (int i = 0; i < number_of_bits; ++i) {		//записать в файл часть фрагмента BIN до первого 0x7e
+		//	std::cout << bit_buffer[i] << ' ';			
+	//	}
+	//	std::cout << '\n';	
+
+	/*
+	unsigned char current_byte;
+	std::ifstream file;													//байт ридер
+	file.open("../result/HDLC_TEST_RESULT.bin", std::ios::binary);
+	while (file >> current_byte) {
+		file.read((char*)&current_byte, sizeof(current_byte));
+		std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(current_byte)).str();
+		std::cout << hex <<'\n';
+	}
+	*/
