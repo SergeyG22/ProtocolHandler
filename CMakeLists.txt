@@ -20,6 +20,8 @@ file(GLOB sources "${PROJECT_SOURCE_DIR}/src/*.cpp"
 )
 
 file(GLOB tests "${PROJECT_SOURCE_DIR}/tests/*.cpp"
+				"${PROJECT_SOURCE_DIR}/src/ProtocolHandler/*.cpp"
+				"${PROJECT_SOURCE_DIR}/include/ProtocolHandler/*.cpp"
 )
 
 add_executable(${PROJECT_NAME}

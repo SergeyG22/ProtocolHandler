@@ -13,7 +13,9 @@ class HDLC_Handler {
 	bool frame_is_open = false;
 	std::vector<size_t>bit_buffer;
 	const int ignore_start_bits = 3;
+	std::list<size_t>stuff_combination{ 0,1,1,1,1,1 };
 public:
 	void exec();
-	unsigned char byteConverter(std::vector<size_t>&);
+	unsigned char byteConverterVec(std::vector<size_t>&);
+	unsigned char byteConverterLst(std::list<size_t>&);
 };
