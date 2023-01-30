@@ -7,22 +7,66 @@ void HDLC_Handler::exec() {
 	std::ifstream file("../data/HDLC_TEST_.BIT", std::ifstream::in | std::ifstream::binary);
 	unsigned char current_bite;
 	const int number_of_bits = 8;
-	int step = 0; 
 	while (!file.eof()) {	
 		file.read((char*)&current_bite, sizeof(current_bite));
 		std::bitset<8>buffer(current_bite);
 		for (int i = 0; i < number_of_bits; ++i) {
 			bit_buffer.emplace_back(buffer[i]);
-			std::cout << buffer[i] << ' ';
-		}
-		std::cout << "byte number = " << step <<'\n';
-		step++;
-		if (step == 74) {
-			break;
 		}
 	}
+	int test = 0;
+	std::vector<size_t>byte_buffer;
+	for (int i = ignore_start_bits; i < bit_buffer.size(); ++i) {
+		if (byte_buffer.size() != number_of_bits) {
+			byte_buffer.emplace_back(bit_buffer[i]);  // пока не ровно 8 битам формируем байт
+		}
+		else {
+			
+		//	for (int i = 0; i < byte_buffer.size(); ++i) { 
+		//		std::cout << byte_buffer[i] <<' ';
+		//	}
+		//	std::cout << '\n';
+			std::reverse(byte_buffer.begin(),byte_buffer.end());
+			std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(byteConverter(byte_buffer))).str();
+			std::cout << hex << '\n';				 // после формирования байта выводим этот байт на экран
+													// байт формируется не верно (СЧИТЫВАТЬ ЕГО НАДО СПРАВА НА ЛЕВО КОНЦА 00111100)
+			byte_buffer.clear();
+			byte_buffer.emplace_back(bit_buffer[i]);
+			//std::cout << bit_buffer[i];
+			if (test == 123) {					//122
+				break;
+			}
+			test++;
+			
+			if (hex == frame_border) {   // если попали на флаг 
+				if (!frame_is_open) {	 //сообщаем что рамка открыта
+					frame_is_open = true;
+					std::cout << "border open\n";
+					continue;
+				}
+				if (frame_is_open) {
+					frame_is_open = false;
+					std::cout << "border close\n";
+					//сделать какие-то действия с данными
+					continue;
+				}
+			}
+			
+			
+			
+
+			
+
+
+		}
+
+	}
+
+
+
+
+
 	file.close();
-	std::cout << bit_buffer.size();
 
 
 	/*
