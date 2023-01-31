@@ -4,22 +4,19 @@
 
 void HDLC_Handler::exec() {
 
-//	std::ofstream out("../result/HDLC_TEST_RESULT.sig", std::ios::out | std::ios::binary);		
+//			
 	std::ifstream file("../data/HDLC_TEST_.BIT", std::ifstream::in | std::ifstream::binary);	
 	fillBuffer(file);
-	int test = 0;
 	for (int i = ignore_start_bits; i < bit_buffer.size(); ++i) {
 		if (byte_buffer.size() != number_of_bits) {		
-			byte_buffer.emplace_front(bit_buffer[i]);  //добавляем в буфер по 8 бит
+			byte_buffer.emplace_front(bit_buffer[i]);
 		}
 		else {
 			std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(byteConverterLst(byte_buffer))).str();
-			std::cout << hex <<'\n';
 			byte_buffer.clear();
 			byte_buffer.emplace_front(bit_buffer[i]);
 	
 			if (hex != frame_border) {
-				std::cout << "Текущий фрейм не равен 0x7e\n";
 				int current_index = i - 8;
 				std::list<int>bit_sequence;
 				for (int i = 0; i < 6; ++i) {  
@@ -44,7 +41,6 @@ void HDLC_Handler::exec() {
 							if (bit_buffer[current_index] == 1) {  
 								if (bit_buffer[current_index + 1] == 0) {
 									for (int i = 0; i < index_elements.size(); ++i) {
-										std::cout << "Индекс удаленного элемента " << index_elements[i] <<'\n';
 										auto it = package.begin();
 										std::advance(it,index_elements[i]);
 										package.erase(it);
@@ -54,30 +50,19 @@ void HDLC_Handler::exec() {
 										package.pop_back();
 									}
 
-									std::cout << "Данные которые мы ложим в пакет: " << '\n';
-									int i1 = 0;
-									for (auto it : package) {
-										std::cout << it;
-										i1++;
-										if (i1 == 8) {
-											i1 = 0;
-											std::cout << '\n';
-										}
+									pack.push_back(package.size() / number_of_bits);
+
+									for (auto it : pack) {
+								//		std::cout << it << ' ';
 									}
 
-									std::cout <<"Размер пакета = " << package.size() << '\n';
-									pack.push_back(package.size() / 8);
-									std::cout << "Получена флаговая комбинация!\n";
-								//	package.clear();
-								//	index_elements.clear();
-									//размер пакета + количество удаленных элементов
+									uint16_t package_size = package.size() / number_of_bits;
+									writeInSigFormat(package_size, package); // размер + пакет
+
 									break;
 								}
 							}
 							
-
-						
-
 						return;
 					}
 
@@ -89,105 +74,16 @@ void HDLC_Handler::exec() {
 				index_elements.clear();
 
 				std::cout << "вышли\n";
-				std::cout << "Текущая позиция i " << i << '\n';
-				test++;
-				if (test == 20) {
 
-					for (auto it : pack) {
-						std::cout << it <<' ';
-					}
-					return;
-				}
+			//	for (auto it : pack) {
+			//		std::cout << it <<' ';
+			//	}
 			}
 
 		}
 
 	}
 	file.close();
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	//	std::cout << "Текущий индекс = " << current_index <<'\n';
-//	std::cout << bit_buffer[current_index] << bit_buffer[current_index+1] << bit_buffer[current_index + 2] << bit_buffer[current_index + 3];
-//	std::cout << bit_buffer[current_index + 4] << bit_buffer[current_index + 5] << bit_buffer[current_index + 6] << bit_buffer[current_index + 7];
-//	std::cout << "Текущий индекс = " << current_index << '\n';
-
-
-
-
-	/*
-if (std::equal(test1.begin(), test1.end(), stuff_combination.begin(), stuff_combination.end())) {
-	std::cout << "true\n";
-}*/
-//считать первые 5 бит
-//сравниваем их с эквивалентом который у нас есть
-//	std::cout << bit_buffer[i] << bit_buffer[i+ 1] << bit_buffer[i + 2] << bit_buffer[i + 3] << bit_buffer[i + 4];
-
-
-
-	/*
-	std::vector<size_t>byte_buffer; 
-	for (int i = ignore_start_bits; i < bit_buffer.size(); ++i) { 
-
-			if (byte_buffer.size() != number_of_bits) {				
-				byte_buffer.emplace_back(bit_buffer[i]);
-			}
-			else {
-				std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(byteConverter(byte_buffer))).str();
-				std::cout << hex << '\n';
-				byte_buffer.clear();
-				byte_buffer.emplace_back(bit_buffer[i]);
-
-				if (hex == frame_border) {
-					if (!frame_is_open) {
-						frame_is_open = true;
-						std::cout << "border open\n";
-						continue;
-					}
-					if (frame_is_open) {
-						frame_is_open = false;
-						std::cout << "border close\n";
-						continue;
-					}
-				}
-			}
-	}
-	*/
-	
-
-
-//	std::cout << '\n';
-//	std::cout << (int)byteConverter(bit_buffer) <<'\n';
-//	unsigned char test = byteConverter(bit_buffer);
-//	std::cout << result[0];
-
-//	std::string res = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(byteConverter(bit_buffer))).str();
-//	std::cout << res <<'\n';
-
-//	std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << int(current_bite)).str();
-//	std::cout << hex <<'\n';
-
-
 }
 
 
@@ -199,6 +95,30 @@ void HDLC_Handler::fillBuffer(std::ifstream& file) {
 		std::bitset<8>buffer(current_bite);
 		for (int i = 0; i < number_of_bits; ++i) {
 			bit_buffer.emplace_back(buffer[i]);
+		}
+	}
+}
+
+void HDLC_Handler::writeInSigFormat(uint16_t& package_size, std::list<size_t>& package) {
+
+	std::cout << "Размер пакета в байтах = " << package_size << '\n';
+	std::cout << "Размер пакета в битах = " << package.size() << '\n';
+	std::ofstream out("../result/HDLC_TEST_RESULT.sig", std::ios::app | std::ios::binary);
+	out.write(reinterpret_cast<const char*>(&package_size), sizeof(package_size));
+
+	int current_bit = 0;
+	std::list<size_t>current_byte;
+	for (auto it : package) {
+		current_byte.push_front(it);
+		current_bit++;
+		if (current_bit == number_of_bits) {
+			current_bit = 0;
+			std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << (int)byteConverterLst(current_byte)).str();
+			std::cout << hex << '\n';
+			std::reverse(std::begin(current_byte),std::end(current_byte));
+			unsigned char byte = byteConverterLst(current_byte);
+			out.write(reinterpret_cast<const char*>(&byte), sizeof(byte));
+			current_byte.clear();
 		}
 	}
 }
@@ -225,7 +145,26 @@ unsigned char HDLC_Handler::byteConverterVec(std::vector<size_t>& buffer) {
 }
 
 
+/*
+std::ofstream out("../result/HDLC_TEST_RESULT.sig", std::ios::app | std::ios::binary);
+out.write(reinterpret_cast<const char*>(&package_size), sizeof(package_size));
 
+
+for (int i = 0; i < package.size(); ++i) {
+	std::list<size_t>current_byte;
+	auto it = package.begin();
+	for (int j = 0; j < number_of_bits; ++j) {
+
+		std::advance(it, j);
+		std::cout << *it;
+		current_byte.push_back(*it);
+	}
+	//	unsigned char byte = byteConverterLst(current_byte);
+	//	std::string hex = static_cast<std::stringstream const&>(std::stringstream() << "0x" << std::hex << (int)byteConverterLst(current_byte)).str();
+	//	std::cout << hex;
+	//	out.write((char*)&byte, sizeof(byte));
+}
+*/
 
 
 
