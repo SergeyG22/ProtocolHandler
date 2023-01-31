@@ -13,8 +13,11 @@ class HDLC_Handler {
 	const std::string frame_border = "0x7e";
 	bool frame_is_open = false;
 	std::vector<size_t>bit_buffer;
+	std::vector<int>index_elements;
 	const int ignore_start_bits = 3;
 	std::list<size_t>stuff_combination{ 0,1,1,1,1,1 };
+	std::list<size_t>package;
+	std::vector<int>pack;
 public:
 	void exec();
 	unsigned char byteConverterVec(std::vector<size_t>& );
