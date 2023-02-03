@@ -17,6 +17,8 @@ set(BUILD_SHARED_LIBS OFF)
 file(GLOB sources "${PROJECT_SOURCE_DIR}/src/*.cpp"
 				  "${PROJECT_SOURCE_DIR}/include/ProtocolHandler/*.h"
 				  "${PROJECT_SOURCE_DIR}/src/ProtocolHandler/*.cpp"
+				  "${PROJECT_SOURCE_DIR}/include/Facade/*.h"
+				  "${PROJECT_SOURCE_DIR}/src/Facade/*.cpp"
 )
 
 file(GLOB tests "${PROJECT_SOURCE_DIR}/tests/*.cpp"
