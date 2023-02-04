@@ -8,8 +8,10 @@ int main(){
 	std::string command;
 	while (std::cin >> command) {
 		if (command == "start") {
-			std::cout << "Wait, in progress....";
-			hdlc_handler->exec("../data/HDLC_TEST_.BIT", "../result/HDLC_TEST_RESULT.sig");
+			std::cout << "Wait, in progress....\n";
+			if (hdlc_handler->exec("../data/HDLC_TEST_.BIT", "../result/HDLC_TEST_RESULT.sig")) {
+				return 1;
+			}
 			std::cout << "completed!\n";
 			return 0;
 		}

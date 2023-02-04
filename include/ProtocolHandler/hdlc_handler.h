@@ -7,20 +7,23 @@
 #include <list>
 
 class HDLC_Handler {
-	uint16_t m_package_size;
+//	uint16_t m_package_size;
 	const int m_number_of_bits = 8;
 	const int m_ignore_start_bits = 3;
-	std::list<uint32_t>m_byte_buffer;
-	std::vector<uint32_t>m_bit_buffer;
-	const std::string m_frame_border = "0x7e";	
+	std::list<uint8_t>m_byte_buffer;
 	std::vector<int>m_index_elements;
-	std::list<uint32_t>m_stuff_combination{ 0,1,1,1,1,1 };
-	std::list<uint32_t>m_package;
-	bool checkSequenceforDuplicate(int, int);
-	void fillBuffer(std::ifstream&);
-	void selectPackagesFromBuffer(const std::string&);	
-	void writeInSigFormat(uint16_t&, std::list<uint32_t>&, const std::string&);
+	std::vector<uint8_t>m_bit_buffer;
+	const std::string m_frame_border = "0x7e";	
+	std::list<uint8_t>m_bit_flag{ 0,1,1,1,1,1 };
+	std::list<uint8_t>m_package;
+	void addBitToPackage(std::vector<uint8_t>&, int current_index);
+	void MakeStepInSequenceOfBuffer(std::list<int>&, int&);
+	int checkSequenceforDuplicate(int, int);
+	int fillBitBuffer(const std::string&);
+	void selectPackagesFromBitBuffer(const std::string&);	
+	void writeToFileInSigFormat(std::list<uint8_t>&, const std::string&);
+	void removeBitTransparencyFromPackage();
 public:
-	unsigned char byteConverterLst(std::list<uint32_t>&);
-	void exec(const std::string& , const std::string&);
+	unsigned char byteConverter(std::list<uint8_t>&);
+	int exec(const std::string& , const std::string&);
 };
