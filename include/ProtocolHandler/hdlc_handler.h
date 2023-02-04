@@ -7,7 +7,6 @@
 #include <list>
 
 class HDLC_Handler {
-//	uint16_t m_package_size;
 	const int m_number_of_bits = 8;
 	const int m_ignore_start_bits = 3;
 	std::list<uint8_t>m_byte_buffer;

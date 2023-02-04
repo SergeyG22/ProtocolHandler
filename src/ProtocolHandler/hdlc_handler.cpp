@@ -24,7 +24,7 @@ int HDLC_Handler::checkSequenceforDuplicate(int current_index, int i) {
 	if (std::equal(next_bit_flag.begin(), next_bit_flag.end(), m_bit_flag.begin(), m_bit_flag.end())) {
 		int drop_element_index = current_index - i + m_number_of_bits + 1;
 		m_index_elements.push_back(drop_element_index);
-		return drop_element_index;
+	//	return drop_element_index;
 	}
 	return 0;
 }
@@ -76,7 +76,7 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 						current_index++;
 						if (m_bit_buffer[current_index] == 0) {
 							int drop_element_index = (current_index - i + m_number_of_bits);
-							drop_element_index -= m_index_elements.size();	// When deleting elements, the package container is compressed and the indexes are shifted
+							drop_element_index -= m_index_elements.size();					// When deleting elements, the package container is compressed and the indexes are shifted
 							checkSequenceforDuplicate(current_index, i);
 							m_index_elements.push_back(drop_element_index);
 							continue;
