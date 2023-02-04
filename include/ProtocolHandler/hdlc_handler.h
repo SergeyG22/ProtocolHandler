@@ -16,6 +16,7 @@ class HDLC_Handler {
 	std::vector<int>m_index_elements;
 	std::list<uint32_t>m_stuff_combination{ 0,1,1,1,1,1 };
 	std::list<uint32_t>m_package;
+	bool checkSequenceforDuplicate(int, int);
 	void fillBuffer(std::ifstream&);
 	void selectPackagesFromBuffer(const std::string&);	
 	void writeInSigFormat(uint16_t&, std::list<uint32_t>&, const std::string&);
