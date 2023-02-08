@@ -7,6 +7,7 @@
 #include <list>
 
 class HDLC_Handler {
+	int test = 0;
 	const int m_number_of_bits = 8;
 	const int m_ignore_start_bits = 3;
 	std::list<uint8_t>m_byte_buffer;
@@ -15,9 +16,12 @@ class HDLC_Handler {
 	const std::string m_frame_border = "0x7e";	
 	std::list<uint8_t>m_bit_flag{ 0,1,1,1,1,1 };
 	std::list<uint8_t>m_package;
+	void incrementPackageIndex(int& );
+	int getIndexOfDeletedBit(int, int);
 	void addBitToPackage(std::vector<uint8_t>&, int current_index);
 	void MakeStepInSequenceOfBuffer(std::list<int>&, int&);
 	int checkSequenceforDuplicate(int, int, int);
+	int checkSequenceForFirstEntryBitFlag(int, int, int);
 	int fillBitBuffer(const std::string&);
 	void selectPackagesFromBitBuffer(const std::string&);	
 	void writeToFileInSigFormat(std::list<uint8_t>&, const std::string&);

@@ -8,6 +8,14 @@ int HDLC_Handler::exec(const std::string& input_file_path, const std::string& ou
 	return 0;
 }
 
+void HDLC_Handler::incrementPackageIndex(int & package_index) {
+	++package_index;
+}
+
+int HDLC_Handler::getIndexOfDeletedBit(int bit_package_index, int bit_buffer_index) {
+	return (bit_package_index - bit_buffer_index + m_number_of_bits) - m_index_elements.size();
+}
+
 void HDLC_Handler::addBitToPackage(std::vector<uint8_t>& m_bit_buffer, int current_index) {
 	m_package.push_back(m_bit_buffer[current_index]);
 }
@@ -25,7 +33,17 @@ int HDLC_Handler::checkSequenceforDuplicate(int bit_package_index, int bit_buffe
 		m_index_elements.push_back(drop_element_index + m_bit_flag.size());
 		std::cout << "Дубликат найден!" << drop_element_index + m_bit_flag.size() <<'\n';
 	}
-	return 0;
+	return drop_element_index + m_bit_flag.size();
+}
+
+int HDLC_Handler::checkSequenceForFirstEntryBitFlag(int bit_package_index, int bit_buffer_index, int drop_element_index) {
+	std::list<uint8_t>m_flag{ 1,1,1,1,1,0 };
+	if (m_package.size() == m_flag.size() && 
+		std::equal(m_package.begin(), m_package.end(), m_flag.begin(), m_flag.end())) {
+		m_index_elements.push_back(m_flag.size() - 1);
+		checkSequenceforDuplicate(bit_package_index - 1, bit_buffer_index, drop_element_index);
+	}
+	return m_flag.size() - 1;
 }
 
 int HDLC_Handler::fillBitBuffer(const std::string& input_file_path) {
@@ -49,38 +67,35 @@ int HDLC_Handler::fillBitBuffer(const std::string& input_file_path) {
 }
 
 void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_path) {
-	int test = 0;
 	for (int bit_buffer_index = m_ignore_start_bits; bit_buffer_index < m_bit_buffer.size(); ++bit_buffer_index) {
 
-		if (m_byte_buffer.size() != m_number_of_bits) {								// пока не равно 8 бит
-			m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			// добавляем биты в бит буффер (превращаем в байт)
+		if (m_byte_buffer.size() != m_number_of_bits) {								
+			m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			
 		}
-		else { //когда добавили														//конвертируем байт в строку
+		else { 												
 			std::string hex = (std::stringstream() << "0x" << std::hex << int(byteConverter(m_byte_buffer))).str();
-			m_byte_buffer.clear();													 //очищаем бит буффер
-			m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			//добавляем первый элемент следующего байта
+			m_byte_buffer.clear();													 
+			m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			
 
-			if (hex != m_frame_border) {											//если строка не равна флагу (x7)
-				int bit_package_index = bit_buffer_index - m_number_of_bits;		//начальный индекс пакета = индекс буффера - 8 бит
+			if (hex != m_frame_border) {											
+				int bit_package_index = bit_buffer_index - m_number_of_bits;		
 				std::list<int>bit_sequence;
-				for (int i = 0; i < m_bit_flag.size(); ++i) {						//заполнить битовый флаг (для сравнения с m_bit_flag)
+				for (int i = 0; i < m_bit_flag.size(); ++i) {						
 					bit_sequence.push_back(m_bit_buffer[bit_package_index]);
-					addBitToPackage(m_bit_buffer, bit_package_index);				//добавляем бит в пакет
-					bit_package_index++;											//смещаем индекс пакета
+					addBitToPackage(m_bit_buffer, bit_package_index);														
+					incrementPackageIndex(bit_package_index);
 				}
-				while (true) {														//пока истина
-					addBitToPackage(m_bit_buffer, bit_package_index);				//добавляем бит в пакет
-					MakeStepInSequenceOfBuffer(bit_sequence, bit_package_index);	//делаем один шаг в последовательности
-																					//если битовая последовательность эквивалентна флагу
+				while (true) {														
+					checkSequenceForFirstEntryBitFlag(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
+					addBitToPackage(m_bit_buffer, bit_package_index);				
+					MakeStepInSequenceOfBuffer(bit_sequence, bit_package_index);						
+																					
 					if (std::equal(bit_sequence.begin(), bit_sequence.end(), m_bit_flag.begin(), m_bit_flag.end())) {
-						addBitToPackage(m_bit_buffer, bit_package_index);           //добавляем бит в пакет
-						bit_package_index++;										//смещаем индекс пакета
-						if (m_bit_buffer[bit_package_index] == 0) {					//если текущий бит равен нулю	
-							int drop_element_index = (bit_package_index - bit_buffer_index + m_number_of_bits); //индекс бита пакета - индекс буффера 
-							drop_element_index -= m_index_elements.size();					// When deleting elements, the package container is compressed and the indexes are shifted
-					//		std::cout << "индекс удаляемого элемента = " << drop_element_index << '\n';
-							checkSequenceforDuplicate(bit_package_index, bit_buffer_index, drop_element_index);	
-							m_index_elements.push_back(drop_element_index);
+						addBitToPackage(m_bit_buffer, bit_package_index);           
+						incrementPackageIndex(bit_package_index);										
+						if (m_bit_buffer[bit_package_index] == 0) {					
+							checkSequenceforDuplicate(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
+							m_index_elements.push_back(getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
 							continue;
 						}
 
@@ -100,9 +115,9 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 				m_index_elements.clear();
 
 				test++;
-				if (test == 101) {
-					int test = 10;
-				//	return;	 //сравнить последовательность с самим собой
+				if (test == 103) {
+					int plug = 0;
+					return;	
 				}
 			}
 
