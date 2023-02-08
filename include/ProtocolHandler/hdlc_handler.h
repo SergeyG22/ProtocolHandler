@@ -17,7 +17,7 @@ class HDLC_Handler {
 	std::list<uint8_t>m_package;
 	void addBitToPackage(std::vector<uint8_t>&, int current_index);
 	void MakeStepInSequenceOfBuffer(std::list<int>&, int&);
-	int checkSequenceforDuplicate(int, int);
+	int checkSequenceforDuplicate(int, int, int);
 	int fillBitBuffer(const std::string&);
 	void selectPackagesFromBitBuffer(const std::string&);	
 	void writeToFileInSigFormat(std::list<uint8_t>&, const std::string&);

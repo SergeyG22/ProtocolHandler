@@ -17,7 +17,7 @@ int main(){
 		}
 		std::cout << "invalid command\n";
 	}
-
+	
 	system("pause");
 	return 0;
 }
