@@ -1,25 +1,23 @@
-#include <iostream>
-#include <fstream>
-#include <string>
 #include "ProtocolHandler/hdlc_handler.h"
+#include "Facade/facade.h"
 
 int main(){
-	HDLC_Handler handler;
-	handler.print();
-	/*
-	std::cout << "start initialization\n";
-	std::string line;
-	std::ifstream file("../HDLC_sources/file.txt");
-
-	if (file.is_open()) {
-		while (std::getline(file,line)) {
-			std::cout << line << '\n';
+	setlocale(LC_ALL,"russian");
+	
+	std::shared_ptr<Facade>hdlc_handler = std::make_shared<Facade>();
+	std::string command;
+	while (std::cin >> command) {
+		if (command == "start") {
+			std::cout << "Wait, in progress....\n";
+			if (hdlc_handler->exec("../data/HDLC_TEST_.BIT", "../result/HDLC_TEST_RESULT.sig")) {
+				return 1;
+			}
+			std::cout << "completed!\n";
+			return 0;
 		}
+		std::cout << "invalid command\n";
 	}
-	else {
-		std::cout << "file is not opened\n";
-	}
-	file.close();
-	*/
+	
 	system("pause");
+	return 0;
 }
