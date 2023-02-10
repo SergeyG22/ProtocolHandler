@@ -13,11 +13,15 @@ void HDLC_Handler::incrementPackageIndex(int & package_index) {
 }
 
 int HDLC_Handler::getIndexOfDeletedBit(int bit_package_index, int bit_buffer_index) {
-	return (bit_package_index - bit_buffer_index + m_number_of_bits) - m_index_elements.size();
+	return (bit_package_index - bit_buffer_index + m_number_of_bits) - m_numbers_of_delete_bit.size();
 }
 
 void HDLC_Handler::addBitToPackage(std::vector<uint8_t>& m_bit_buffer, int current_index) {
 	m_package.push_back(m_bit_buffer[current_index]);
+}
+
+void HDLC_Handler::addBitToByteBuffer(uint8_t bit) {
+	m_byte_buffer.emplace_front(bit);
 }
 
 void HDLC_Handler::MakeStepInSequenceOfBuffer(std::list<int>& bit_sequence, int& current_index) {
@@ -28,22 +32,21 @@ void HDLC_Handler::MakeStepInSequenceOfBuffer(std::list<int>& bit_sequence, int&
 
 int HDLC_Handler::checkSequenceforDuplicate(int bit_package_index, int bit_buffer_index, int drop_element_index) {
 	std::vector<int>next_bit_flag;
-	std::copy(m_bit_buffer.begin() + bit_package_index, m_bit_buffer.begin() + bit_package_index + m_bit_flag.size(), std::back_inserter(next_bit_flag));
-	if (std::equal(next_bit_flag.begin(), next_bit_flag.end(), m_bit_flag.begin(), m_bit_flag.end())) {
-		m_index_elements.push_back(drop_element_index + m_bit_flag.size());
-		std::cout << "ƒубликат найден!" << drop_element_index + m_bit_flag.size() <<'\n';
+	std::copy(m_bit_buffer.begin() + bit_package_index, m_bit_buffer.begin() + bit_package_index + m_bit_stuffing_flag.size(), std::back_inserter(next_bit_flag));
+	if (std::equal(next_bit_flag.begin(), next_bit_flag.end(), m_bit_stuffing_flag.begin(), m_bit_stuffing_flag.end())) {
+		m_numbers_of_delete_bit.push_back(drop_element_index + m_bit_stuffing_flag.size());
 	}
-	return drop_element_index + m_bit_flag.size();
+	return drop_element_index + m_bit_stuffing_flag.size();
 }
 
 int HDLC_Handler::checkSequenceForFirstEntryBitFlag(int bit_package_index, int bit_buffer_index, int drop_element_index) {
-	std::list<uint8_t>m_flag{ 1,1,1,1,1,0 };
-	if (m_package.size() == m_flag.size() && 
-		std::equal(m_package.begin(), m_package.end(), m_flag.begin(), m_flag.end())) {
-		m_index_elements.push_back(m_flag.size() - 1);
+	std::list<uint8_t>m_bit_stuffing_reverce_flag{ 1,1,1,1,1,0 };
+	if (m_package.size() == m_bit_stuffing_reverce_flag.size() && 
+		std::equal(m_package.begin(), m_package.end(), m_bit_stuffing_reverce_flag.begin(), m_bit_stuffing_reverce_flag.end())) {
+		m_numbers_of_delete_bit.push_back(m_bit_stuffing_reverce_flag.size() - 1);
 		checkSequenceforDuplicate(bit_package_index - 1, bit_buffer_index, drop_element_index);
 	}
-	return m_flag.size() - 1;
+	return m_bit_stuffing_reverce_flag.size() - 1;
 }
 
 int HDLC_Handler::fillBitBuffer(const std::string& input_file_path) {
@@ -66,22 +69,24 @@ int HDLC_Handler::fillBitBuffer(const std::string& input_file_path) {
 	return 0;
 }
 
+
+
 void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_path) {
-	for (int bit_buffer_index = m_ignore_start_bits; bit_buffer_index < m_bit_buffer.size(); ++bit_buffer_index) {
+
+	for (int bit_buffer_index = getFirstFlagBit(m_bit_frame_flag, m_bit_buffer); bit_buffer_index < m_bit_buffer.size(); ++bit_buffer_index) {
 		
 		if (m_byte_buffer.size() != m_number_of_bits) {								
 			m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			
 		}
-		else { 			
+		else { 		
 			std::string hex = (std::stringstream() << "0x" << std::hex << int(byteConverter(m_byte_buffer))).str();
 			m_byte_buffer.clear();													 
-			m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			
-
-			if (hex != m_frame_border) {
-
+		//	m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			
+			addBitToByteBuffer(m_bit_buffer[bit_buffer_index]);
+			if (hex != m_frame_flag) {
 				int bit_package_index = bit_buffer_index - m_number_of_bits;		
 				std::list<int>bit_sequence;
-				for (int i = 0; i < m_bit_flag.size(); ++i) {						
+				for (int i = 0; i < m_bit_stuffing_flag.size(); ++i) {						
 					bit_sequence.push_back(m_bit_buffer[bit_package_index]);
 					addBitToPackage(m_bit_buffer, bit_package_index);
 					incrementPackageIndex(bit_package_index);
@@ -90,18 +95,18 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 					checkSequenceForFirstEntryBitFlag(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
 					addBitToPackage(m_bit_buffer, bit_package_index);
 					MakeStepInSequenceOfBuffer(bit_sequence, bit_package_index);						
-					if (std::equal(bit_sequence.begin(), bit_sequence.end(), m_bit_flag.begin(), m_bit_flag.end())) {
+					if (std::equal(bit_sequence.begin(), bit_sequence.end(), m_bit_stuffing_flag.begin(), m_bit_stuffing_flag.end())) {
 					addBitToPackage(m_bit_buffer, bit_package_index);
-						
+
 						incrementPackageIndex(bit_package_index);										
 						if (m_bit_buffer[bit_package_index] == 0) {					
 							checkSequenceforDuplicate(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
-							m_index_elements.push_back(getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
+							m_numbers_of_delete_bit.push_back(getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
 							continue;
 						}
 
-						if (m_bit_buffer[bit_package_index] == 1) {			//если он обнаруживает флаг
-							if (m_bit_buffer[bit_package_index + 1] == 0) { //и ноль то он уже в пакете и его надо дропнуть!!!!!
+						if (m_bit_buffer[bit_package_index] == 1) {			
+							if (m_bit_buffer[bit_package_index + 1] == 0) { 
 								removeBitTransparencyFromPackage();								
 								writeToFileInSigFormat(m_package, output_file_path);
 								break;
@@ -111,58 +116,10 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 					}
 				}				
 
-				if (m_package.size() == 8) {						   //1983448 - самый конец 102 пакета
-					std::cout << "bit " << bit_buffer_index << '\n';  //1983464 - конец пакет 103 с 1 байтом 
-					std::cout << "package index " << bit_package_index << '\n';// 64 56 48 сьехал и сломалс€
-					std::cout << "next flag pack = ";
-					std::cout << (int)m_bit_buffer[1983449];				//449 - 557   //с 1983449 отсчитывать по 8 бит в поисках флага
-					std::cout << (int)m_bit_buffer[1983450];
-					std::cout << (int)m_bit_buffer[1983451];
-					std::cout << (int)m_bit_buffer[1983452];
-					std::cout << (int)m_bit_buffer[1983453];
-					std::cout << (int)m_bit_buffer[1983454];
-					std::cout << (int)m_bit_buffer[1983455];
-					std::cout << (int)m_bit_buffer[1983456];
-					std::cout << (int)m_bit_buffer[1983457];
-					std::cout << "\n";
-
-					std::cout << (int)m_bit_buffer[1983440];				  
-					std::cout << (int)m_bit_buffer[1983441];
-					std::cout << (int)m_bit_buffer[1983442];
-					std::cout << (int)m_bit_buffer[1983443];
-					std::cout << (int)m_bit_buffer[1983444];
-					std::cout << (int)m_bit_buffer[1983445];
-					std::cout << (int)m_bit_buffer[1983446];
-					std::cout << (int)m_bit_buffer[1983447];
-					std::cout << (int)m_bit_buffer[1983448]; // конец пакета
-				}
-
-				bit_buffer_index += m_package.size() + m_index_elements.size();
-			
-				std::cout <<"bit " <<  bit_buffer_index << '\n';
-				std::cout << (int)m_bit_buffer[1983472];
-				std::cout << (int)m_bit_buffer[1983473];
-				std::cout << (int)m_bit_buffer[1983474];
-				std::cout << (int)m_bit_buffer[1983475];
-				std::cout << (int)m_bit_buffer[1983476];
-				std::cout << (int)m_bit_buffer[1983477];
-				std::cout << (int)m_bit_buffer[1983478];
-				std::cout << (int)m_bit_buffer[1983479];
-
-				for (auto it : m_package) {
-					std::cout << (int)it << ' ';
-				}
-				m_package.clear();									
-				m_index_elements.clear();
-				std::cout << "size = " << m_byte_buffer.size() <<'\n';
-				m_byte_buffer.clear();										 // <----
-				m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]); // <---
-				test++;
-				
-				if (test == 103) {
-				//	return;
-				}
-
+				bit_buffer_index += m_package.size() + m_numbers_of_delete_bit.size();
+				clearAllBuffers();
+			//	m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);
+				addBitToByteBuffer(m_bit_buffer[bit_buffer_index]);
 			}
 
 		}
@@ -173,7 +130,7 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 void HDLC_Handler::writeToFileInSigFormat(std::list<uint8_t>& package, const std::string& output_file_path) {
 	std::ofstream out_file(output_file_path, std::ios::app | std::ios::binary);
 	if (out_file.is_open()) {
-		uint16_t package_size = m_package.size() / m_number_of_bits; //ѕ–ќ¬≈–»“№  ј∆ƒџ… ѕј ≈“ Ќј Ѕ»“ќ¬”ё ѕќ—Ћ≈ƒќ¬ј“≈Ћ№Ќќ—“№
+		uint16_t package_size = m_package.size() / m_number_of_bits;
 		out_file.write(reinterpret_cast<const char*>(&package_size), sizeof(package_size));
 		int current_bit = 0;
 		std::list<uint8_t>current_byte;
@@ -193,17 +150,33 @@ void HDLC_Handler::writeToFileInSigFormat(std::list<uint8_t>& package, const std
 
 void HDLC_Handler::removeBitTransparencyFromPackage() {
 	
-	for (int i = 0; i < m_index_elements.size(); ++i) {
+	for (int i = 0; i < m_numbers_of_delete_bit.size(); ++i) {
 		auto it = m_package.begin();
-		std::cout << "”дал€ю элемент # " << m_index_elements[i] <<'\n';
-		std::advance(it, m_index_elements[i]);
+		std::advance(it, m_numbers_of_delete_bit[i]);
 		m_package.erase(it);
 	}
 
-	for (int i = 0; i < m_bit_flag.size(); ++i) {
+	for (int i = 0; i < m_bit_stuffing_flag.size(); ++i) {
 		m_package.pop_back();
 	}
 	
+}
+
+int HDLC_Handler::getFirstFlagBit(const std::vector<uint8_t>& flag, const std::vector<uint8_t>& bit_buffer) {
+	for (int current_bit = 0; current_bit < bit_buffer.size(); ++current_bit) {
+		std::vector<uint8_t>byte;
+		std::copy(bit_buffer.begin() + current_bit, bit_buffer.begin() + current_bit + flag.size(), std::back_inserter(byte));
+		if (std::equal(flag.begin(), flag.end(), byte.begin(), byte.end())) {
+			return current_bit;
+		}
+	}
+	return 0;
+}
+
+void HDLC_Handler::clearAllBuffers() {
+	m_package.clear();
+	m_numbers_of_delete_bit.clear();
+	m_byte_buffer.clear();
 }
 
 

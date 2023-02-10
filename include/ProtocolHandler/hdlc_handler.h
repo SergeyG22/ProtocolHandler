@@ -7,19 +7,18 @@
 #include <list>
 
 class HDLC_Handler {
-	int b = 13;
-	int test = 0;
 	const int m_number_of_bits = 8;
-	const int m_ignore_start_bits = 3;
 	std::list<uint8_t>m_byte_buffer;
-	std::vector<int>m_index_elements;
+	std::vector<int>m_numbers_of_delete_bit;
 	std::vector<uint8_t>m_bit_buffer;
-	const std::string m_frame_border = "0x7e";	
-	std::list<uint8_t>m_bit_flag{ 0,1,1,1,1,1 };
+	const std::string m_frame_flag = "0x7e";
+	std::vector<uint8_t>m_bit_frame_flag = { 0,1,1,1,1,1,1,0 };
+	std::list<uint8_t>m_bit_stuffing_flag{ 0,1,1,1,1,1 };
 	std::list<uint8_t>m_package;
 	void incrementPackageIndex(int& );
 	int getIndexOfDeletedBit(int, int);
 	void addBitToPackage(std::vector<uint8_t>&, int current_index);
+	void addBitToByteBuffer(uint8_t);
 	void MakeStepInSequenceOfBuffer(std::list<int>&, int&);
 	int checkSequenceforDuplicate(int, int, int);
 	int checkSequenceForFirstEntryBitFlag(int, int, int);
@@ -27,7 +26,9 @@ class HDLC_Handler {
 	void selectPackagesFromBitBuffer(const std::string&);	
 	void writeToFileInSigFormat(std::list<uint8_t>&, const std::string&);
 	void removeBitTransparencyFromPackage();
+	int getFirstFlagBit(const std::vector<uint8_t>& flag, const std::vector<uint8_t>& );
+	void clearAllBuffers();
 public:
 	unsigned char byteConverter(std::list<uint8_t>&);
-	int exec(const std::string& , const std::string&);
+	int exec(const std::string&, const std::string&);
 };
