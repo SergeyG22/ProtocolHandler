@@ -28,6 +28,7 @@ class HDLC_Handler {
 	void removeBitTransparencyFromPackage();
 	int getFirstFlagBit(const std::vector<uint8_t>& flag, const std::vector<uint8_t>& );
 	void clearAllBuffers();
+	inline uint16_t getPackageSize() { return m_package.size() / m_number_of_bits;}
 public:
 	unsigned char byteConverter(std::list<uint8_t>&);
 	int exec(const std::string&, const std::string&);

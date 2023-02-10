@@ -79,11 +79,23 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 			m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			
 		}
 		else { 		
+
+
+		//	if (std::equal(m_byte_buffer.begin(), m_byte_buffer.end(), m_bit_frame_flag.begin(), m_bit_frame_flag.end())) {
+		//		std::cout << "equialent;\n";
+		//		std::cout << bit_buffer_index;
+		//		return;
+		//	}  else {
+					//std::cout << "not equalient\n";
+					//}
+
 			std::string hex = (std::stringstream() << "0x" << std::hex << int(byteConverter(m_byte_buffer))).str();
-			m_byte_buffer.clear();													 
-		//	m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);			
+			bool state = std::equal(m_byte_buffer.begin(), m_byte_buffer.end(), m_bit_frame_flag.begin(), m_bit_frame_flag.end());
+			m_byte_buffer.clear();													 			
 			addBitToByteBuffer(m_bit_buffer[bit_buffer_index]);
-			if (hex != m_frame_flag) {
+
+			if (!state) {
+			//if (hex != m_frame_flag) {
 				int bit_package_index = bit_buffer_index - m_number_of_bits;		
 				std::list<int>bit_sequence;
 				for (int i = 0; i < m_bit_stuffing_flag.size(); ++i) {						
@@ -96,8 +108,8 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 					addBitToPackage(m_bit_buffer, bit_package_index);
 					MakeStepInSequenceOfBuffer(bit_sequence, bit_package_index);						
 					if (std::equal(bit_sequence.begin(), bit_sequence.end(), m_bit_stuffing_flag.begin(), m_bit_stuffing_flag.end())) {
-					addBitToPackage(m_bit_buffer, bit_package_index);
 
+					addBitToPackage(m_bit_buffer, bit_package_index);
 						incrementPackageIndex(bit_package_index);										
 						if (m_bit_buffer[bit_package_index] == 0) {					
 							checkSequenceforDuplicate(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
@@ -118,7 +130,6 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 
 				bit_buffer_index += m_package.size() + m_numbers_of_delete_bit.size();
 				clearAllBuffers();
-			//	m_byte_buffer.emplace_front(m_bit_buffer[bit_buffer_index]);
 				addBitToByteBuffer(m_bit_buffer[bit_buffer_index]);
 			}
 
@@ -130,7 +141,7 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 void HDLC_Handler::writeToFileInSigFormat(std::list<uint8_t>& package, const std::string& output_file_path) {
 	std::ofstream out_file(output_file_path, std::ios::app | std::ios::binary);
 	if (out_file.is_open()) {
-		uint16_t package_size = m_package.size() / m_number_of_bits;
+		uint16_t package_size = getPackageSize();
 		out_file.write(reinterpret_cast<const char*>(&package_size), sizeof(package_size));
 		int current_bit = 0;
 		std::list<uint8_t>current_byte;
