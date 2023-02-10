@@ -7,6 +7,7 @@
 #include <list>
 
 class HDLC_Handler {
+	int b = 13;
 	int test = 0;
 	const int m_number_of_bits = 8;
 	const int m_ignore_start_bits = 3;
