@@ -3,8 +3,8 @@
 
 int main(){
 	setlocale(LC_ALL,"russian");
-	
-	std::shared_ptr<Facade>hdlc_handler = std::make_shared<Facade>();
+	std::shared_ptr<HDLC_Handler>hdlc_handler = std::make_shared<HDLC_Handler>();
+
 	std::string command;
 	while (std::cin >> command) {
 		if (command == "start") {
