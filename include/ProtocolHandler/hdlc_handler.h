@@ -19,6 +19,7 @@ class HDLC_Handler {
 	void addBitToPackage(std::vector<uint8_t>&, int current_index);
 	void addBitToByteBuffer(uint8_t);
 	void MakeStepInSequenceOfBitBuffer(std::list<int>&, int&);
+	bool isBitBufferLimit(int, std::vector<uint8_t>&) const;
 	bool checkSequenceforDuplicate(int, int, int);
 	int checkSequenceForFirstEntryBitFlag(int, int, int);
 	int fillBitBuffer(const std::string&);
