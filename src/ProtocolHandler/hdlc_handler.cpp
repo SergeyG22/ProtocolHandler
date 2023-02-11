@@ -13,10 +13,24 @@ void HDLC_Handler::incrementPackageIndex(int & package_index) {
 }
 
 int HDLC_Handler::getIndexOfDeletedBit(int bit_package_index, int bit_buffer_index) {
+	
+	if ((bit_package_index - bit_buffer_index + m_number_of_bits) - m_numbers_of_delete_bit.size() == 32) {
+	//	return 35; // 31 = 1 // 32 = 1 // 33 = 0 // 34 = 1 // 35 = 1
+	}
+	/*
+	if ((bit_package_index - bit_buffer_index + m_number_of_bits) - m_numbers_of_delete_bit.size() == 284) {
+		return 285;
+	}
+	if ((bit_package_index - bit_buffer_index + m_number_of_bits) - m_numbers_of_delete_bit.size() == 290) {
+		return 291;
+	}
+	*/
+	//std::cout << "Размер контейнера = " << m_numbers_of_delete_bit.size() <<'\n';
 	return (bit_package_index - bit_buffer_index + m_number_of_bits) - m_numbers_of_delete_bit.size();
 }
 
 void HDLC_Handler::addBitToPackage(std::vector<uint8_t>& m_bit_buffer, int current_index) {
+//	std::cout << (int)m_bit_buffer[current_index];
 	m_package.push_back(m_bit_buffer[current_index]);
 }
 
@@ -30,13 +44,15 @@ void HDLC_Handler::MakeStepInSequenceOfBitBuffer(std::list<int>& bit_sequence, i
 	bit_sequence.push_back(m_bit_buffer[current_index]);
 }
 
-int HDLC_Handler::checkSequenceforDuplicate(int bit_package_index, int bit_buffer_index, int drop_element_index) {
+bool HDLC_Handler::checkSequenceforDuplicate(int bit_package_index, int bit_buffer_index, int drop_element_index) {
 	std::vector<int>next_bit_flag;
 	std::copy(m_bit_buffer.begin() + bit_package_index, m_bit_buffer.begin() + bit_package_index + m_bit_stuffing_flag.size(), std::back_inserter(next_bit_flag));
 	if (std::equal(next_bit_flag.begin(), next_bit_flag.end(), m_bit_stuffing_flag.begin(), m_bit_stuffing_flag.end())) {
-		m_numbers_of_delete_bit.push_back(drop_element_index + m_bit_stuffing_flag.size());
+		m_numbers_of_delete_bit.push_back(drop_element_index + m_bit_stuffing_flag.size()); //39
+	//	std::cout << "Дубликат с индексом = " << drop_element_index + m_bit_stuffing_flag.size() <<'\n';
+		return true;
 	}
-	return drop_element_index + m_bit_stuffing_flag.size();
+	return false; 
 }
 
 int HDLC_Handler::checkSequenceForFirstEntryBitFlag(int bit_package_index, int bit_buffer_index, int drop_element_index) {
@@ -51,6 +67,7 @@ int HDLC_Handler::checkSequenceForFirstEntryBitFlag(int bit_package_index, int b
 
 int HDLC_Handler::fillBitBuffer(const std::string& input_file_path) {
 	std::ifstream file(input_file_path, std::ifstream::in | std::ifstream::binary);
+
 	unsigned char current_bite;
 	if (file.is_open()) {
 		while (!file.eof()) {
@@ -73,10 +90,8 @@ void HDLC_Handler::shiftIndexOfBufferBit(int& bit_buffer_index) {
 	bit_buffer_index += m_package.size() + m_numbers_of_delete_bit.size();
 }
 
-
-
 void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_path) {
-
+	int test = 0;
 	for (int bit_buffer_index = getFirstFlagBit(m_bit_frame_flag, m_bit_buffer); bit_buffer_index < m_bit_buffer.size(); ++bit_buffer_index) {
 		
 		if (m_byte_buffer.size() != m_number_of_bits) {								
@@ -104,10 +119,26 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 					addBitToPackage(m_bit_buffer, bit_package_index);
 						incrementPackageIndex(bit_package_index);
 
-						if (m_bit_buffer[bit_package_index] == 0) {					
-							checkSequenceforDuplicate(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
+						if (m_bit_buffer[bit_package_index] == 0) {		//ВСЯ ШНЯГА ПРОИСХОДИТ ПОСЛЕ ВЫЗОВА ФУНКЦИИ С ДУБЛИКАТОМ
+																							//получаем индекс удаляемого бита
+
+						//	checkSequenceforDuplicate(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
+						//	m_numbers_of_delete_bit.push_back(getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
+						//	continue;	
+
+						//	int index = getIndexOfDeletedBit(bit_package_index, bit_buffer_index);
+						//	std::cout << "Получаемый индекс = " << index << '\n';
+						//	checkSequenceforDuplicate(bit_package_index, bit_buffer_index, index);
+						//	m_numbers_of_delete_bit.push_back(getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
+						//	continue;	
+
+							if (checkSequenceforDuplicate(bit_package_index, bit_buffer_index, getIndexOfDeletedBit(bit_package_index, bit_buffer_index))) {
+								m_numbers_of_delete_bit.push_back(getIndexOfDeletedBit(bit_package_index, bit_buffer_index) + 1);
+								continue;
+							}
 							m_numbers_of_delete_bit.push_back(getIndexOfDeletedBit(bit_package_index, bit_buffer_index));
 							continue;
+
 						}
 
 						if (m_bit_buffer[bit_package_index] == 1) {			
@@ -123,6 +154,11 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 				shiftIndexOfBufferBit(bit_buffer_index);
 				clearAllBuffers();
 				addBitToByteBuffer(m_bit_buffer[bit_buffer_index]);
+				test++;
+			//	std::cout << '\n';
+				if (test == 100) {
+				//	break;
+				}
 			}
 
 		}
@@ -156,8 +192,11 @@ void HDLC_Handler::removeBitTransparencyFromPackage() {
 	for (int i = 0; i < m_numbers_of_delete_bit.size(); ++i) {
 		auto it = m_package.begin();
 		std::advance(it, m_numbers_of_delete_bit[i]);
+	//	std::cout << "Индекс удаляемого элемента = " << m_numbers_of_delete_bit[i] << '\n';
+	//	std::cout << "Удаляемый элемент = " << (int)*it << '\n';
 		m_package.erase(it);
 	}
+	std::cout << '\n';
 	removeTailPackageWithFlag();
 }
 

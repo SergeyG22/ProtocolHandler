@@ -19,7 +19,7 @@ class HDLC_Handler {
 	void addBitToPackage(std::vector<uint8_t>&, int current_index);
 	void addBitToByteBuffer(uint8_t);
 	void MakeStepInSequenceOfBitBuffer(std::list<int>&, int&);
-	int checkSequenceforDuplicate(int, int, int);
+	bool checkSequenceforDuplicate(int, int, int);
 	int checkSequenceForFirstEntryBitFlag(int, int, int);
 	int fillBitBuffer(const std::string&);
 	void shiftIndexOfBufferBit(int&);
@@ -29,7 +29,7 @@ class HDLC_Handler {
 	void removeTailPackageWithFlag();
 	void clearAllBuffers();
 	int getFirstFlagBit(const std::vector<uint8_t>& flag, const std::vector<uint8_t>& );
-	inline uint16_t getPackageSize() { return m_package.size() / m_number_of_bits;}
+	inline uint16_t getPackageSize() { return m_package.size() / m_number_of_bits; }
 public:
 	unsigned char BitToByteConverter(std::list<uint8_t>&);
 	int exec(const std::string&, const std::string&);
