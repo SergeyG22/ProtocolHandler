@@ -12,6 +12,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 enable_testing()
+
 set(BUILD_SHARED_LIBS OFF)
 
 file(GLOB sources "${PROJECT_SOURCE_DIR}/src/*.cpp"
@@ -39,3 +40,4 @@ gtest_discover_tests(google_tests)
 
 target_link_libraries(google_tests gtest_main)
 target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include")
+

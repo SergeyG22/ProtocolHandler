@@ -17,7 +17,7 @@ int HDLC_Handler::getIndexOfDeletedBit(int bit_package_index, int bit_buffer_ind
 }
 
 void HDLC_Handler::addBitToPackage(std::vector<uint8_t>& m_bit_buffer, int current_index) {
-	m_package.push_back(m_bit_buffer[current_index]);
+	m_package.emplace_back(m_bit_buffer[current_index]);
 }
 
 void HDLC_Handler::addBitToByteBuffer(uint8_t bit) {
@@ -27,7 +27,7 @@ void HDLC_Handler::addBitToByteBuffer(uint8_t bit) {
 void HDLC_Handler::MakeStepInSequenceOfBitBuffer(std::list<int>& bit_sequence, int& current_index) {
 	bit_sequence.pop_front();
 	current_index++;
-	bit_sequence.push_back(m_bit_buffer[current_index]); //буфера с таким индексом не существует
+	bit_sequence.emplace_back(m_bit_buffer[current_index]); 
 }
 
 bool HDLC_Handler::isBitBufferLimit(int bit_package_index, std::vector<uint8_t>& m_bit_buffer) const {
@@ -41,7 +41,7 @@ bool HDLC_Handler::checkSequenceforDuplicate(int bit_package_index, int bit_buff
 	std::vector<int>next_bit_flag;
 	std::copy(m_bit_buffer.begin() + bit_package_index, m_bit_buffer.begin() + bit_package_index + m_bit_stuffing_flag.size(), std::back_inserter(next_bit_flag));
 	if (std::equal(next_bit_flag.begin(), next_bit_flag.end(), m_bit_stuffing_flag.begin(), m_bit_stuffing_flag.end())) {
-		m_numbers_of_delete_bit.push_back(drop_element_index + m_bit_stuffing_flag.size());
+		m_numbers_of_delete_bit.emplace_back(drop_element_index + m_bit_stuffing_flag.size());
 		return true;
 	}
 	return false; 
@@ -51,7 +51,7 @@ int HDLC_Handler::checkSequenceForFirstEntryBitFlag(int bit_package_index, int b
 	std::list<uint8_t>m_bit_stuffing_reverce_flag{ 1,1,1,1,1,0 };
 	if (m_package.size() == m_bit_stuffing_reverce_flag.size() && 
 		std::equal(m_package.begin(), m_package.end(), m_bit_stuffing_reverce_flag.begin(), m_bit_stuffing_reverce_flag.end())) {
-		m_numbers_of_delete_bit.push_back(m_bit_stuffing_reverce_flag.size() - 1);
+		m_numbers_of_delete_bit.emplace_back(m_bit_stuffing_reverce_flag.size() - 1);
 		checkSequenceforDuplicate(bit_package_index - 1, bit_buffer_index, drop_element_index);
 	}
 	return m_bit_stuffing_reverce_flag.size() - 1;
@@ -97,7 +97,7 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 				int bit_package_index = bit_buffer_index - m_number_of_bits;		
 				std::list<int>bit_sequence;
 				for (int bit_step = 0; bit_step < m_bit_stuffing_flag.size(); ++bit_step) {						
-					bit_sequence.push_back(m_bit_buffer[bit_package_index]);
+					bit_sequence.emplace_back(m_bit_buffer[bit_package_index]);
 					addBitToPackage(m_bit_buffer, bit_package_index);
 					incrementPackageIndex(bit_package_index);
 				}
