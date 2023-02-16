@@ -195,7 +195,6 @@ void HDLC_Handler::clearAllBuffers() {
 }
 
 bool HDLC_Handler::dataCheckByCRC() {
-
 	int byte_index = 0;
 	int size_of_fcs_in_bytes = 2;
 	std::shared_ptr<unsigned char[]> package_without_FCS(new unsigned char[m_allocate_bytes_from_package.size() - size_of_fcs_in_bytes], std::default_delete<unsigned char[]>());
