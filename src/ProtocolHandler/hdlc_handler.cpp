@@ -1,4 +1,5 @@
 #include "ProtocolHandler/hdlc_handler.h"
+#include "CRC/CRC.h"
 
 int HDLC_Handler::exec(const std::string& input_file_path, const std::string& output_file_path) {
 	if (fillBitBuffer(input_file_path)) {
@@ -83,6 +84,7 @@ void HDLC_Handler::shiftIndexOfBufferBit(int& bit_buffer_index) {
 }
 
 void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_path) {
+
 	for (int bit_buffer_index = getFirstFlagBit(m_bit_frame_flag, m_bit_buffer); bit_buffer_index < m_bit_buffer.size(); ++bit_buffer_index) {
 		
 		if (m_byte_buffer.size() != m_number_of_bits) {								
@@ -123,17 +125,23 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 
 						if (m_bit_buffer[bit_package_index] == 1) {			
 							if (m_bit_buffer[bit_package_index + 1] == 0) { 
-								removeBitTransparencyFromPackage();								
-								writeToFileInSigFormat(m_package, output_file_path);
+								removeBitTransparencyFromPackage();
+								allocateBytesFromPackage(m_package);
+								if (!dataCheckByCRC()) {
+									break;
+								}
+								writeToFileInSigFormat(output_file_path);
 								break;
 							}
 						}
 
 					}
-				}				
+				}			
+
 				shiftIndexOfBufferBit(bit_buffer_index);
 				clearAllBuffers();
 				addBitToByteBuffer(m_bit_buffer[bit_buffer_index]);
+
 			}
 
 		}
@@ -141,22 +149,13 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 	}
 }
 
-void HDLC_Handler::writeToFileInSigFormat(std::list<uint8_t>& package, const std::string& output_file_path) {
+void HDLC_Handler::writeToFileInSigFormat(const std::string& output_file_path) {
 	std::ofstream out_file(output_file_path, std::ios::app | std::ios::binary);
 	if (out_file.is_open()) {
 		uint16_t package_size = getPackageSize();
 		out_file.write(reinterpret_cast<const char*>(&package_size), sizeof(package_size));
-		int current_bit = 0;
-		std::list<uint8_t>current_byte;
-		for (auto get_bit : package) {
-			current_byte.emplace_back(get_bit);
-			current_bit++;
-			if (current_bit == m_number_of_bits) {
-				current_bit = 0;
-				unsigned char byte = BitToByteConverter(current_byte);				
-				out_file.write(reinterpret_cast<const char*>(&byte), sizeof(byte));
-				current_byte.clear();
-			}
+		for (auto byte : m_allocate_bytes_from_package) {
+			out_file.write(reinterpret_cast<const char*>(&byte), sizeof(byte));
 		}
 	}
 	out_file.close();
@@ -192,6 +191,61 @@ void HDLC_Handler::clearAllBuffers() {
 	m_package.clear();
 	m_numbers_of_delete_bit.clear();
 	m_byte_buffer.clear();
+	m_allocate_bytes_from_package.clear();
+}
+
+bool HDLC_Handler::dataCheckByCRC() {
+
+	int byte_index = 0;
+	int size_of_fcs_in_bytes = 2;
+	std::shared_ptr<unsigned char[]> package_without_FCS(new unsigned char[m_allocate_bytes_from_package.size() - size_of_fcs_in_bytes], std::default_delete<unsigned char[]>());
+	for (auto byte : m_allocate_bytes_from_package) {		
+		if (byte_index <= m_allocate_bytes_from_package.size() - size_of_fcs_in_bytes) {
+			package_without_FCS[byte_index] = (int)byte;
+			byte_index++;
+		}
+	}
+	std::uint16_t first_hex_FCS = m_allocate_bytes_from_package[m_allocate_bytes_from_package.size() - 1]; 
+	std::uint16_t second_hex_FCS = m_allocate_bytes_from_package[m_allocate_bytes_from_package.size() - 2];
+	std::string first_hex_FCS_str = (std::stringstream() << std::hex << first_hex_FCS).str();
+	std::string second_hex_FCS_str = (std::stringstream() << std::hex << second_hex_FCS).str();
+
+	if (first_hex_FCS_str[0] == '0') {
+		first_hex_FCS_str.pop_back();
+	}
+
+	if (second_hex_FCS_str.size() == 1) {
+		second_hex_FCS_str.insert(0,"0");		
+	}
+
+	std::string FCS_str;
+	FCS_str += first_hex_FCS_str;
+	FCS_str += second_hex_FCS_str;
+
+	std::uint16_t hex_CRC = CRC::CalculateBits(package_without_FCS.get(), (m_allocate_bytes_from_package.size() - size_of_fcs_in_bytes) * m_number_of_bits, CRC::CRC_16_X25());	
+	std::string CRC_str = (std::stringstream() << std::hex << hex_CRC).str();
+	
+	if (FCS_str == CRC_str) {
+		m_packet_counter.first += 1;
+		return true;
+	}
+	m_packet_counter.second += 1;
+
+	return false;
+}
+
+void HDLC_Handler::allocateBytesFromPackage(std::list<uint8_t>& package) {
+	int current_bit = 0;
+	std::list<uint8_t>current_byte;
+	for (auto get_bit : package) {
+		current_byte.emplace_back(get_bit);
+		current_bit++;
+		if (current_bit == m_number_of_bits) {
+			current_bit = 0;
+			m_allocate_bytes_from_package.emplace_back(BitToByteConverter(current_byte));			
+			current_byte.clear();
+		}
+	}
 }
 
 
@@ -207,7 +261,6 @@ unsigned char HDLC_Handler::BitToByteConverter(std::list<uint8_t>& buffer) {
 	}
 	return result.front();
 }
-
 
 
 

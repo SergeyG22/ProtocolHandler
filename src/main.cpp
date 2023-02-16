@@ -11,6 +11,8 @@ int main(){
 			if (hdlc_handler->exec("../data/HDLC_TEST_.BIT", "../result/HDLC_TEST_RESULT.sig")) {
 				return 1;
 			}
+			std::cout <<"correct packages = " << hdlc_handler->getNumberOfCorrectPackets() << '\n';
+			std::cout <<"broken packages = " << hdlc_handler->getNumberOfBrokenPackets() << '\n';
 			std::cout << "completed!\n";
 			return 0;
 		}
