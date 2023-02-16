@@ -6,8 +6,7 @@
 #include <vector>
 #include <list>
 
-class HDLC_Handler {
-	
+class HDLC_Handler {	
 	const int m_number_of_bits = 8;
 	std::list<uint8_t>m_byte_buffer;
 	std::vector<uint8_t>m_bit_buffer;
@@ -34,11 +33,11 @@ class HDLC_Handler {
 	void clearAllBuffers();
 	bool dataCheckByCRC();
 	void allocateBytesFromPackage(std::list<uint8_t>&);
-	int getFirstFlagBit(const std::vector<uint8_t>& flag, const std::vector<uint8_t>& );
-	inline uint16_t getPackageSize() { return m_package.size() / m_number_of_bits; }
+	int getFirstFlagBit(const std::vector<uint8_t>& flag, const std::vector<uint8_t>& );	
 public:
 	unsigned char BitToByteConverter(std::list<uint8_t>&);
 	int exec(const std::string&, const std::string&);
+	inline uint16_t getPackageSize() { return m_package.size() / m_number_of_bits; }
 	inline int getNumberOfCorrectPackets() const { return m_packet_counter.first; };
 	inline int getNumberOfBrokenPackets() const { return m_packet_counter.second; };
 };
