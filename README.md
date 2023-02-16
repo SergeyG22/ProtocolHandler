@@ -26,5 +26,9 @@ start - select packages from the incoming binary file
 
 After executing the command, the results file will appear in the folder 'result'
 
+### Preview
+ 
+![hippo](https://github.com/SergeyG22/ProtocolHandler/blob/develop/images/image.gif)
+
 
 
