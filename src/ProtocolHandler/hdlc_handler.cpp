@@ -48,14 +48,15 @@ bool HDLC_Handler::checkSequenceforDuplicate(int bit_package_index, int bit_buff
 	return false; 
 }
 
-int HDLC_Handler::checkSequenceForFirstEntryBitFlag(int bit_package_index, int bit_buffer_index, int drop_element_index) {
+bool HDLC_Handler::checkSequenceForFirstEntryBitFlag(int bit_package_index, int bit_buffer_index, int drop_element_index) {
 	std::list<uint8_t>m_bit_stuffing_reverce_flag{ 1,1,1,1,1,0 };
 	if (m_package.size() == m_bit_stuffing_reverce_flag.size() && 
 		std::equal(m_package.begin(), m_package.end(), m_bit_stuffing_reverce_flag.begin(), m_bit_stuffing_reverce_flag.end())) {
 		m_numbers_of_delete_bit.emplace_back(m_bit_stuffing_reverce_flag.size() - 1);
 		checkSequenceforDuplicate(bit_package_index - 1, bit_buffer_index, drop_element_index);
+		return true;
 	}
-	return m_bit_stuffing_reverce_flag.size() - 1;
+	return false;
 }
 
 int HDLC_Handler::fillBitBuffer(const std::string& input_file_path) {
@@ -84,7 +85,6 @@ void HDLC_Handler::shiftIndexOfBufferBit(int& bit_buffer_index) {
 }
 
 void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_path) {
-
 	for (int bit_buffer_index = getFirstFlagBit(m_bit_frame_flag, m_bit_buffer); bit_buffer_index < m_bit_buffer.size(); ++bit_buffer_index) {
 		
 		if (m_byte_buffer.size() != m_number_of_bits) {								
@@ -136,12 +136,12 @@ void HDLC_Handler::selectPackagesFromBitBuffer(const std::string& output_file_pa
 						}
 
 					}
-				}			
-
+				}	
+				
 				shiftIndexOfBufferBit(bit_buffer_index);
 				clearAllBuffers();
 				addBitToByteBuffer(m_bit_buffer[bit_buffer_index]);
-
+				
 			}
 
 		}
@@ -246,7 +246,6 @@ void HDLC_Handler::allocateBytesFromPackage(std::list<uint8_t>& package) {
 		}
 	}
 }
-
 
 unsigned char HDLC_Handler::BitToByteConverter(std::list<uint8_t>& buffer) {
 	std::list<unsigned char>result((m_number_of_bits + 7) >> 3);
